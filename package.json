@@ -1,0 +1,176 @@
+{
+  "name": "smart-rename",
+  "displayName": "Smart Rename",
+  "publisher": "danilodevsilva",
+  "description": "Rename a folder and automatically rename all matching files inside. Updates imports and references across the entire project. Works with Angular, React, Vue, Svelte, and any framework.",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other",
+    "Formatters"
+  ],
+  "keywords": [
+    "rename",
+    "refactor",
+    "folder rename",
+    "bulk rename",
+    "smart rename",
+    "angular",
+    "react",
+    "vue",
+    "svelte",
+    "component rename",
+    "file rename",
+    "import update",
+    "rename files",
+    "rename folder",
+    "rename component",
+    "productivity",
+    "developer tools",
+    "refactoring"
+  ],
+  "icon": "icon.png",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartRename.renameFolder",
+        "title": "Smart Rename: Rename Folder & Files"
+      },
+      {
+        "command": "smartRename.renameFromFile",
+        "title": "Smart Rename: Rename This Component"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "smartRename.renameFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "smartRename.renameFromFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "7_modification@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Smart Rename",
+      "properties": {
+        "smartRename.autoRenameOnFolderChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect folder renames and offer to rename files inside."
+        },
+        "smartRename.updateImports": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically update import paths and references across the project."
+        },
+        "smartRename.updateFileContents": {
+          "type": "boolean",
+          "default": true,
+          "description": "Update class names, selectors, and other references inside files."
+        },
+        "smartRename.showPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a preview of all changes before applying."
+        },
+        "smartRename.filePatterns": {
+          "type": "array",
+          "default": [
+            "*.component.ts",
+            "*.component.html",
+            "*.component.css",
+            "*.component.scss",
+            "*.component.sass",
+            "*.component.less",
+            "*.component.spec.ts",
+            "*.module.ts",
+            "*.service.ts",
+            "*.service.spec.ts",
+            "*.directive.ts",
+            "*.pipe.ts",
+            "*.guard.ts",
+            "*.resolver.ts",
+            "*.interceptor.ts",
+            "*.stories.tsx",
+            "*.stories.ts",
+            "*.test.ts",
+            "*.test.tsx",
+            "*.test.js",
+            "*.test.jsx",
+            "*.spec.ts",
+            "*.spec.tsx",
+            "*.spec.js",
+            "*.spec.jsx",
+            "*.styles.ts",
+            "*.styles.css",
+            "*.styles.scss",
+            "*.module.css",
+            "*.module.scss",
+            "*.tsx",
+            "*.ts",
+            "*.jsx",
+            "*.js",
+            "*.vue",
+            "*.svelte",
+            "*.html",
+            "*.css",
+            "*.scss",
+            "*.sass",
+            "*.less"
+          ],
+          "description": "File patterns to consider when renaming (glob patterns). Files matching these patterns whose name starts with the folder name will be renamed."
+        },
+        "smartRename.excludeFolders": {
+          "type": "array",
+          "default": [
+            "node_modules",
+            ".git",
+            "dist",
+            "build",
+            "out",
+            ".next",
+            ".nuxt",
+            ".angular"
+          ],
+          "description": "Folders to exclude when searching for import references."
+        }
+      }
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daniloagostinho/smart-rename.git"
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.17.50",
+    "@types/vscode": "^1.100.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
+  }
+}
