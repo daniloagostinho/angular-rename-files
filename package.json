@@ -149,10 +149,18 @@
       }
     }
   },
+  "author": {
+    "name": "Danilo Agostinho",
+    "url": "https://github.com/daniloagostinho"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/daniloagostinho/smart-rename#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/daniloagostinho/smart-rename.git"
+  },
+  "bugs": {
+    "url": "https://github.com/daniloagostinho/smart-rename/issues"
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
