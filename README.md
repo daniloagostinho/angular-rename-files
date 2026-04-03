@@ -1,4 +1,4 @@
-# Smart Rename
+# ✏️ Smart Rename
 
 [![Version](https://img.shields.io/visual-studio-marketplace/v/danilodevsilva.smart-rename?label=version&color=blue)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/danilodevsilva.smart-rename?color=brightgreen)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
@@ -12,7 +12,7 @@
 
 ---
 
-## Why Smart Rename?
+## 💡 Why Smart Rename?
 
 Every component-based framework follows the same pattern: a folder with files that share its name.
 
@@ -30,9 +30,9 @@ Renaming `home` to `dashboard` means renaming the folder **and** every file insi
 
 ---
 
-## Features
+## ✨ Features
 
-### Rename folder + all matching files
+### 📁 Rename folder + all matching files
 
 Right-click any folder in the Explorer and select **"Smart Rename: Rename Folder & Files"**. Every file whose name starts with the folder name gets renamed automatically.
 
@@ -45,11 +45,11 @@ home/                            dashboard/
   home.component.spec.ts  →       dashboard.component.spec.ts
 ```
 
-### Auto-detect folder renames
+### 🔍 Auto-detect folder renames
 
 Rename a folder the normal way (F2 in the Explorer) — Smart Rename detects it and offers to rename the files inside. No extra clicks needed, just confirm.
 
-### Update imports across the project
+### 🔗 Update imports across the project
 
 All `import`, `require()`, dynamic `import()`, and CSS `@import` statements referencing the old paths are updated automatically.
 
@@ -61,7 +61,7 @@ import { HomeComponent } from './home/home.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 ```
 
-### Update file contents
+### 📝 Update file contents
 
 Class names, Angular selectors, CSS classes, and camelCase references inside the renamed files are updated too.
 
@@ -72,21 +72,21 @@ Class names, Angular selectors, CSS classes, and camelCase references inside the
 | **CSS class** | `.home-container` | `.dashboard-container` |
 | **camelCase ref** | `homeService` | `dashboardService` |
 
-### Preview before applying
+### 👁️ Preview before applying
 
 See exactly what will change before anything is modified. Review file renames, content changes, and import updates — then apply or cancel.
 
-### Atomic undo
+### ⏪ Atomic undo
 
 All changes (file renames + content edits + import updates) are applied as a single `WorkspaceEdit`. One **Ctrl+Z** undoes everything.
 
-### Rename from file context
+### 🖱️ Rename from file context
 
 Right-click any file and select **"Smart Rename: Rename This Component"** — it renames the parent folder and all sibling files that share the folder name.
 
 ---
 
-## Supported Frameworks
+## 🌍 Supported Frameworks
 
 Smart Rename is **framework-agnostic**. It works with any project structure where files share the folder name:
 
@@ -102,7 +102,7 @@ Smart Rename is **framework-agnostic**. It works with any project structure wher
 
 ---
 
-## How It Works
+## 🧠 How It Works
 
 1. **Scan** — reads the folder contents and finds all files whose name starts with the old folder name
 2. **Compute** — builds the list of file renames, content replacements (PascalCase, camelCase, kebab-case), and import path updates
@@ -112,7 +112,7 @@ Smart Rename is **framework-agnostic**. It works with any project structure wher
 
 ---
 
-## Settings
+## ⚙️ Settings
 
 | Setting | Default | Description |
 |---|---|---|
@@ -144,7 +144,7 @@ Smart Rename is **framework-agnostic**. It works with any project structure wher
 
 ---
 
-## Installation
+## 🚀 Installation
 
 Search **Smart Rename** in the VS Code Extensions panel, or:
 
@@ -154,7 +154,7 @@ code --install-extension danilodevsilva.smart-rename
 
 ---
 
-## Usage
+## 📖 Usage
 
 ### Option 1: Right-click a folder
 
@@ -184,13 +184,13 @@ code --install-extension danilodevsilva.smart-rename
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ---
 
-## Feedback & Issues
+## 💬 Feedback & Issues
 
 Found a bug or have a feature request? [Open an issue on GitHub](https://github.com/daniloagostinho/smart-rename/issues).
 
@@ -198,6 +198,6 @@ If this extension saves you time, consider leaving a review on the Marketplace �
 
 ---
 
-## License
+## 📄 License
 
 [MIT](LICENSE)
