@@ -1,171 +1,138 @@
 import * as vscode from 'vscode';
 import { RenameAction, ContentChange } from './renamer.js';
-import { ImportChange } from './import-updater.js';
 
-export interface PreviewItem {
-  label: string;
-  description: string;
-  detail?: string;
-  picked: boolean;
-  type: 'file-rename' | 'content-change' | 'import-change';
-  data: RenameAction | ContentChange | ImportChange;
+/** The subset of changes the user chose to apply. */
+export interface PreviewSelection {
+  fileRenames: RenameAction[];
+  internalChanges: ContentChange[];
+  referenceChanges: ContentChange[];
+}
+
+interface PreviewItem extends vscode.QuickPickItem {
+  ref?: { type: 'rename' | 'internal' | 'reference'; index: number };
 }
 
 /**
- * Shows a preview of all planned changes and lets the user confirm or cancel.
- * Returns true if the user confirmed, false if cancelled.
+ * Shows a single, scannable multi-select list of every planned change. Each item
+ * is checked by default; unchecking excludes it. Returns the selected subset, or
+ * null if the user cancelled. Native QuickPick = keyboard + screen-reader friendly.
  */
 export async function showPreview(
   fileRenames: RenameAction[],
-  contentChanges: ContentChange[],
-  importChanges: ImportChange[],
+  internalChanges: ContentChange[],
+  referenceChanges: ContentChange[],
   oldName: string,
   newName: string
-): Promise<'apply' | 'apply-selected' | 'cancel'> {
-  const totalChanges = fileRenames.length + contentChanges.length + importChanges.length;
-
-  if (totalChanges === 0) {
+): Promise<PreviewSelection | null> {
+  const total = fileRenames.length + internalChanges.length + referenceChanges.length;
+  if (total === 0) {
     vscode.window.showInformationMessage('Smart Rename: No matching files found to rename.');
-    return 'cancel';
+    return null;
   }
 
-  // Build a detailed message
-  const lines: string[] = [
-    `Smart Rename: ${oldName} → ${newName}`,
-    '',
-  ];
+  const items: PreviewItem[] = [];
 
-  if (fileRenames.length > 0) {
-    lines.push(`📁 File renames (${fileRenames.length}):`);
-    for (const rename of fileRenames) {
-      lines.push(`  ${rename.description}`);
-    }
-    lines.push('');
+  if (fileRenames.length) {
+    items.push({ label: 'Files to rename', kind: vscode.QuickPickItemKind.Separator });
+    fileRenames.forEach((r, index) => {
+      items.push({ label: `$(file) ${r.description}`, picked: true, ref: { type: 'rename', index } });
+    });
   }
 
-  if (contentChanges.length > 0) {
-    lines.push(`📝 Content changes in folder (${contentChanges.length}):`);
-    for (const change of contentChanges) {
-      lines.push(`  ${change.description} (line ${change.line})`);
-    }
-    lines.push('');
+  if (internalChanges.length) {
+    items.push({ label: 'Content in component files', kind: vscode.QuickPickItemKind.Separator });
+    internalChanges.forEach((c, index) => {
+      items.push({
+        label: `$(symbol-property) ${vscode.workspace.asRelativePath(c.uri)}`,
+        description: `${c.changedLines.length} change${plural(c.changedLines.length)}`,
+        detail: firstLinePreview(c),
+        picked: true,
+        ref: { type: 'internal', index },
+      });
+    });
   }
 
-  if (importChanges.length > 0) {
-    lines.push(`🔗 Import/reference updates (${importChanges.length}):`);
-    const byFile = groupImportsByFile(importChanges);
-    for (const [filePath, changes] of byFile) {
-      lines.push(`  ${filePath}:`);
-      for (const change of changes) {
-        lines.push(`    L${change.line}: ${change.oldText} → ${change.newText}`);
-      }
-    }
-    lines.push('');
+  if (referenceChanges.length) {
+    items.push({ label: 'References in other files', kind: vscode.QuickPickItemKind.Separator });
+    referenceChanges.forEach((c, index) => {
+      items.push({
+        label: `$(references) ${vscode.workspace.asRelativePath(c.uri)}`,
+        description: `${c.changedLines.length} change${plural(c.changedLines.length)}`,
+        detail: firstLinePreview(c),
+        picked: true,
+        ref: { type: 'reference', index },
+      });
+    });
   }
 
-  lines.push(`Total: ${totalChanges} changes`);
-
-  // Show as QuickPick with items for selection
-  const items: vscode.QuickPickItem[] = [
-    {
-      label: '$(check) Apply All Changes',
-      description: `${totalChanges} changes`,
-      detail: 'Apply all file renames, content changes, and import updates',
-    },
-    {
-      label: '$(list-flat) Show Details',
-      description: 'View all changes before applying',
-    },
-    {
-      label: '$(close) Cancel',
-      description: 'Cancel the rename operation',
-    },
-  ];
-
-  const selection = await vscode.window.showQuickPick(items, {
-    title: `Smart Rename: ${oldName} → ${newName} (${totalChanges} changes)`,
-    placeHolder: 'Choose an action',
+  const picked = await vscode.window.showQuickPick(items, {
+    canPickMany: true,
+    title: `Smart Rename: ${oldName} → ${newName}`,
+    placeHolder: `${summary(fileRenames, internalChanges, referenceChanges)} — uncheck to skip, Enter to apply`,
   });
 
-  if (!selection) {
-    return 'cancel';
+  if (!picked || picked.length === 0) {
+    return null;
   }
 
-  if (selection.label.includes('Cancel')) {
-    return 'cancel';
-  }
-
-  if (selection.label.includes('Show Details')) {
-    // Show detailed output in an output channel
-    const outputChannel = vscode.window.createOutputChannel('Smart Rename Preview');
-    outputChannel.clear();
-    outputChannel.appendLine(lines.join('\n'));
-    outputChannel.show();
-
-    // Ask again after showing details
-    const confirm = await vscode.window.showInformationMessage(
-      `Smart Rename: Apply ${totalChanges} changes? (${oldName} → ${newName})`,
-      { modal: true },
-      'Apply All',
-      'Cancel'
-    );
-
-    if (confirm === 'Apply All') {
-      return 'apply';
+  const selection: PreviewSelection = { fileRenames: [], internalChanges: [], referenceChanges: [] };
+  for (const item of picked) {
+    if (!item.ref) {
+      continue;
     }
-    return 'cancel';
+    if (item.ref.type === 'rename') {
+      selection.fileRenames.push(fileRenames[item.ref.index]);
+    } else if (item.ref.type === 'internal') {
+      selection.internalChanges.push(internalChanges[item.ref.index]);
+    } else {
+      selection.referenceChanges.push(referenceChanges[item.ref.index]);
+    }
   }
-
-  return 'apply';
+  return selection;
 }
 
-/**
- * Shows a simple confirmation dialog (used when preview is disabled in settings).
- */
+/** Simple confirmation used when the preview setting is disabled. Applies all. */
 export async function showQuickConfirm(
   fileRenames: RenameAction[],
-  contentChanges: ContentChange[],
-  importChanges: ImportChange[],
+  internalChanges: ContentChange[],
+  referenceChanges: ContentChange[],
   oldName: string,
   newName: string
 ): Promise<boolean> {
-  const parts: string[] = [];
-
-  if (fileRenames.length > 0) {
-    parts.push(`${fileRenames.length} file(s)`);
-  }
-  if (contentChanges.length > 0) {
-    parts.push(`${contentChanges.length} content change(s)`);
-  }
-  if (importChanges.length > 0) {
-    parts.push(`${importChanges.length} import(s)`);
-  }
-
-  const message = `Rename ${parts.join(', ')}: ${oldName} → ${newName}?`;
-
-  const result = await vscode.window.showInformationMessage(
-    message,
-    'Yes',
-    'No'
-  );
-
+  const message =
+    `Rename ${oldName} → ${newName}? ${summary(fileRenames, internalChanges, referenceChanges)}`;
+  const result = await vscode.window.showInformationMessage(message, 'Yes', 'No');
   return result === 'Yes';
 }
 
-function groupImportsByFile(changes: ImportChange[]): Map<string, ImportChange[]> {
-  const grouped = new Map<string, ImportChange[]>();
-
-  for (const change of changes) {
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(change.fileUri);
-    const relativePath = workspaceFolder
-      ? vscode.workspace.asRelativePath(change.fileUri)
-      : change.fileUri.fsPath;
-
-    if (!grouped.has(relativePath)) {
-      grouped.set(relativePath, []);
-    }
-    grouped.get(relativePath)!.push(change);
+function summary(
+  fileRenames: RenameAction[],
+  internalChanges: ContentChange[],
+  referenceChanges: ContentChange[]
+): string {
+  const parts: string[] = [];
+  if (fileRenames.length) {
+    parts.push(`${fileRenames.length} file${plural(fileRenames.length)} renamed`);
   }
+  if (internalChanges.length) {
+    parts.push(`${internalChanges.length} content`);
+  }
+  if (referenceChanges.length) {
+    parts.push(`${referenceChanges.length} reference${plural(referenceChanges.length)}`);
+  }
+  return parts.join(' · ') || 'no changes';
+}
 
-  return grouped;
+function firstLinePreview(change: ContentChange): string {
+  const first = change.changedLines[0];
+  if (!first) {
+    return '';
+  }
+  const more = change.changedLines.length - 1;
+  const head = `L${first.line}: ${first.oldText} → ${first.newText}`;
+  return more > 0 ? `${head}  (+${more} more)` : head;
+}
+
+function plural(n: number): string {
+  return n === 1 ? '' : 's';
 }

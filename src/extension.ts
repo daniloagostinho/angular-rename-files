@@ -2,11 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import {
   computeFileRenames,
-  computeContentChangesInFolder,
-  applyFileRenames,
-  applyContentChangesInFolder,
+  computeInternalChanges,
+  computeReferenceChanges,
+  buildRenameTokens,
+  addFileRenames,
+  addContentChanges,
 } from './renamer.js';
-import { computeImportUpdates, applyImportUpdates } from './import-updater.js';
 import { showPreview, showQuickConfirm } from './preview.js';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -53,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      await performSmartRename(uri, oldName, newName);
+      await performSmartRename(uri, oldName, newName, true);
     }
   );
 
@@ -164,7 +165,7 @@ async function performSmartRename(
   skipPreview: boolean = false
 ): Promise<void> {
   const config = vscode.workspace.getConfiguration('smartRename');
-  const shouldUpdateImports = config.get<boolean>('updateImports', true);
+  const shouldUpdateReferences = config.get<boolean>('updateImports', true);
   const shouldUpdateContents = config.get<boolean>('updateFileContents', true);
   const shouldShowPreview = config.get<boolean>('showPreview', true) && !skipPreview;
 
@@ -175,96 +176,148 @@ async function performSmartRename(
       cancellable: true,
     },
     async (progress, token) => {
-      // Step 1: Compute file renames
+      const tokens = buildRenameTokens(oldName, newName);
+
+      // Step 1: file renames (boundary-aware: only files that are the unit).
       progress.report({ message: 'Scanning files...', increment: 10 });
       const fileRenames = await computeFileRenames(folderUri, oldName, newName);
-
       if (token.isCancellationRequested) {
         return;
       }
 
-      // Step 2: Compute content changes in the folder
+      // Step 2: content changes inside the component's own folder.
       progress.report({ message: 'Analyzing content...', increment: 20 });
-      const contentChanges = shouldUpdateContents
-        ? await computeContentChangesInFolder(folderUri, oldName, newName)
+      const internalChanges = shouldUpdateContents
+        ? await computeInternalChanges(folderUri, tokens)
         : [];
-
       if (token.isCancellationRequested) {
         return;
       }
 
-      // Step 3: Compute import updates across the workspace
-      progress.report({ message: 'Scanning imports...', increment: 30 });
-      const importChanges = shouldUpdateImports
-        ? await computeImportUpdates(folderUri.fsPath, oldName, newName)
+      // Step 3: references in OTHER files across the workspace.
+      progress.report({ message: 'Scanning references...', increment: 30 });
+      const referenceChanges = shouldUpdateReferences
+        ? await computeReferenceChanges(folderUri, oldName, tokens)
         : [];
-
       if (token.isCancellationRequested) {
         return;
       }
 
-      const totalChanges = fileRenames.length + contentChanges.length + importChanges.length;
-
+      const totalChanges = fileRenames.length + internalChanges.length + referenceChanges.length;
       if (totalChanges === 0) {
         vscode.window.showInformationMessage('Smart Rename: No matching files found.');
         return;
       }
 
-      // Step 4: Show preview or quick confirm
+      // Step 4: preview or quick confirm. The user can uncheck individual items.
+      let toApply = { fileRenames, internalChanges, referenceChanges };
       if (shouldShowPreview) {
-        const decision = await showPreview(fileRenames, contentChanges, importChanges, oldName, newName);
-        if (decision === 'cancel') {
+        const selection = await showPreview(fileRenames, internalChanges, referenceChanges, oldName, newName);
+        if (!selection) {
           return;
         }
+        toApply = selection;
       } else if (!skipPreview) {
-        const confirmed = await showQuickConfirm(fileRenames, contentChanges, importChanges, oldName, newName);
+        const confirmed = await showQuickConfirm(fileRenames, internalChanges, referenceChanges, oldName, newName);
         if (!confirmed) {
           return;
         }
       }
 
-      // Step 5: Apply changes
+      if (
+        toApply.fileRenames.length === 0 &&
+        toApply.internalChanges.length === 0 &&
+        toApply.referenceChanges.length === 0
+      ) {
+        return;
+      }
+
+      // Step 5: Apply — RENAME FIRST, then edit text.
+      //
+      // Hard rule learned the hard way: you cannot edit a file's text AND rename
+      // that same file in the same WorkspaceEdit. The text edit marks the file
+      // dirty and the rename then fails, making applyEdit return false while the
+      // text edit already stuck. So we strictly order the phases:
+      //   Phase 1: rename child files (inside the still-old folder).
+      //   Phase 2: rename the folder itself.
+      //   Phase 3: text edits — internal content (remapped to the NEW paths)
+      //            + references in other files (paths unchanged, computed above).
       progress.report({ message: 'Applying changes...', increment: 30 });
 
-      let appliedCount = 0;
-
-      // 5a: Rename the folder itself if requested
+      // Guard: abort if the folder rename target already exists.
+      let newFolderUri: vscode.Uri | undefined;
       if (renameFolder) {
         const parentUri = vscode.Uri.file(path.dirname(folderUri.fsPath));
-        const newFolderUri = vscode.Uri.joinPath(parentUri, newName);
+        newFolderUri = vscode.Uri.joinPath(parentUri, newName);
+        try {
+          await vscode.workspace.fs.stat(newFolderUri);
+          vscode.window.showErrorMessage(
+            `Smart Rename: A folder named "${newName}" already exists here. Rename aborted.`
+          );
+          return;
+        } catch {
+          // Target does not exist — good to proceed.
+        }
+      }
+
+      // --- Phase 1: rename selected child files (no text edits) ---
+      if (toApply.fileRenames.length > 0) {
+        const renameEdit = new vscode.WorkspaceEdit();
+        addFileRenames(toApply.fileRenames, renameEdit);
+        const ok = await vscode.workspace.applyEdit(renameEdit);
+        if (!ok) {
+          vscode.window.showErrorMessage(
+            `Smart Rename: Failed to rename files for "${oldName} → ${newName}". Nothing was changed.`
+          );
+          return;
+        }
+      }
+
+      // --- Phase 2: rename the folder itself (no text edits) ---
+      let contentFolderUri = folderUri;
+      if (renameFolder && newFolderUri) {
         const folderEdit = new vscode.WorkspaceEdit();
-        folderEdit.renameFile(folderUri, newFolderUri);
-        const folderRenamed = await vscode.workspace.applyEdit(folderEdit);
-        if (folderRenamed) {
-          // Update folderUri to point to the new location
-          folderUri = newFolderUri;
-          appliedCount++;
+        folderEdit.renameFile(folderUri, newFolderUri, { overwrite: false });
+        const ok = await vscode.workspace.applyEdit(folderEdit);
+        if (!ok) {
+          vscode.window.showWarningMessage(
+            `Smart Rename: Files were renamed, but renaming the folder ` +
+            `"${oldName}" → "${newName}" failed. Rename the folder manually.`
+          );
+          return;
         }
+        contentFolderUri = newFolderUri;
       }
 
-      // 5b: Apply content changes BEFORE file renames (since we reference old file names)
-      if (shouldUpdateContents && contentChanges.length > 0) {
-        const contentSuccess = await applyContentChangesInFolder(folderUri, oldName, newName);
-        if (contentSuccess) {
-          appliedCount += contentChanges.length;
-        }
+      // --- Phase 3: text edits, targeting the now-renamed files ---
+      // Map each internal change's original path to its final path: the folder may
+      // have moved (Phase 2) and its own file may have been renamed (Phase 1).
+      const renamedBase = new Map<string, string>();
+      for (const r of toApply.fileRenames) {
+        renamedBase.set(path.basename(r.oldUri.fsPath), path.basename(r.newUri.fsPath));
+      }
+      const remappedInternal = toApply.internalChanges.map((change) => {
+        const base = path.basename(change.uri.fsPath);
+        const finalBase = renamedBase.get(base) ?? base;
+        return { ...change, uri: vscode.Uri.joinPath(contentFolderUri, finalBase) };
+      });
+
+      const textEdit = new vscode.WorkspaceEdit();
+      addContentChanges(remappedInternal, textEdit);
+      addContentChanges(toApply.referenceChanges, textEdit);
+      const textOk = await vscode.workspace.applyEdit(textEdit);
+      if (!textOk) {
+        vscode.window.showWarningMessage(
+          `Smart Rename: Files were renamed, but updating contents/references failed. ` +
+          `Check the references manually.`
+        );
       }
 
-      // 5c: Apply import updates BEFORE file renames
-      if (shouldUpdateImports && importChanges.length > 0) {
-        const importSuccess = await applyImportUpdates(importChanges);
-        if (importSuccess) {
-          appliedCount += importChanges.length;
-        }
-      }
-
-      // 5d: Apply file renames (last, since imports reference old names)
-      if (fileRenames.length > 0) {
-        const renameSuccess = await applyFileRenames(fileRenames);
-        if (renameSuccess) {
-          appliedCount += fileRenames.length;
-        }
-      }
+      const appliedCount =
+        toApply.fileRenames.length +
+        toApply.internalChanges.length +
+        toApply.referenceChanges.length +
+        (renameFolder ? 1 : 0);
 
       progress.report({ message: 'Done!', increment: 10 });
 

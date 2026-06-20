@@ -1,10 +1,10 @@
 {
-  "name": "smart-rename",
+  "name": "power-rename",
   "displayName": "Smart Rename",
   "publisher": "danilodevsilva",
   "description": "Rename a folder and automatically rename all matching files inside. Updates imports and references across the entire project. Works with Angular, React, Vue, Svelte, and any framework.",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -168,7 +168,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:unit": "tsc -p ./ && node --test out/core.test.js"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
