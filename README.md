@@ -1,203 +1,84 @@
-# ✏️ Smart Rename
+<div align="center">
+  <img src="icon.png" width="120" alt="Angular Rename Files" />
+  <h1>Angular Rename Files</h1>
+  <p><strong>Renomeie um componente Angular de uma vez só</strong> — pasta, arquivos, classe, selector e imports, com um único comando.</p>
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/danilodevsilva.smart-rename?label=version&color=blue)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/danilodevsilva.smart-rename?color=brightgreen)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/danilodevsilva.smart-rename?color=orange)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.100+-blue?logo=visualstudiocode)](https://code.visualstudio.com/)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.smart-rename)
-[![License](https://img.shields.io/github/license/daniloagostinho/smart-rename?color=green)](LICENSE)
-
-> **Rename a folder and all matching files inside — automatically.**
-> Updates imports, class names, selectors, and references across your entire project.
+  [![Version](https://img.shields.io/visual-studio-marketplace/v/danilodevsilva.power-rename?label=version&color=C3002F)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.power-rename)
+  [![Installs](https://img.shields.io/visual-studio-marketplace/i/danilodevsilva.power-rename?color=brightgreen)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.power-rename)
+  [![Rating](https://img.shields.io/visual-studio-marketplace/r/danilodevsilva.power-rename?color=orange)](https://marketplace.visualstudio.com/items?itemName=danilodevsilva.power-rename)
+</div>
 
 ---
 
-## 💡 Why Smart Rename?
+No Angular, renomear um componente é chato: você tem `header.component.ts`, `header.component.html`, `header.component.scss`, `header.component.spec.ts`, a classe `HeaderComponent`, o selector `app-header` e ainda os imports espalhados pelo projeto. Renomear tudo isso na mão é trabalhoso e fácil de esquecer um pedaço.
 
-Every component-based framework follows the same pattern: a folder with files that share its name.
+Esta extensão faz **tudo de uma vez**, com prévia e um único *Ctrl+Z* pra desfazer.
 
-```
-home/
-  home.component.ts
-  home.component.html
-  home.component.scss
-  home.component.spec.ts
-```
+## ✨ O que ela faz
 
-Renaming `home` to `dashboard` means renaming the folder **and** every file inside, then hunting down every import, selector, and class reference across the project. Manually. One by one.
+Ao renomear `header` → `loja`, ela cuida de:
 
-**Smart Rename does all of this in a single action.** Right-click, type the new name, done. Works with Angular, React, Vue, Svelte, Next.js, Nuxt — any framework, any language.
+- 📁 **A pasta** — `header/` → `loja/`
+- 📄 **Os arquivos** — `header.component.ts` → `loja.component.ts` (e `.html`, `.scss`, `.spec.ts`…)
+- 🏷️ **A classe** — `HeaderComponent` → `LojaComponent`
+- 🔖 **O selector** — `app-header` → `app-loja` (na definição e em todos os templates que usam)
+- 🔗 **Os imports e referências** — em todo o projeto (módulos, `imports: []` de standalone, rotas com `loadComponent`, etc.)
 
----
+Tudo passa por uma **prévia** antes de aplicar, e você pode desmarcar item a item.
 
-## ✨ Features
+## 🚀 Como usar
 
-### 📁 Rename folder + all matching files
+1. **Clique com o botão direito na pasta** do componente no Explorer → **"Angular Rename: Renomear pasta e arquivos"**.
+2. Digite o novo nome.
+3. Confirme em **Renomear** (ou **Ver detalhes** pra escolher item a item).
 
-Right-click any folder in the Explorer and select **"Smart Rename: Rename Folder & Files"**. Every file whose name starts with the folder name gets renamed automatically.
+Também funciona clicando com o botão direito em **qualquer arquivo do componente** → **"Angular Rename: Renomear este componente"**.
 
-```
-Before:                          After:
-home/                            dashboard/
-  home.component.ts       →       dashboard.component.ts
-  home.component.html     →       dashboard.component.html
-  home.component.scss     →       dashboard.component.scss
-  home.component.spec.ts  →       dashboard.component.spec.ts
-```
+E se você **renomear a pasta manualmente** pelo Explorer, a extensão detecta e oferece atualizar o resto.
 
-### 🔍 Auto-detect folder renames
+## 🎯 Por que é confiável
 
-Rename a folder the normal way (F2 in the Explorer) — Smart Rename detects it and offers to rename the files inside. No extra clicks needed, just confirm.
+O motor é **boundary-aware** (consciente de fronteiras de identificador) e coberto por uma bateria de testes automatizados. Isso significa que ele:
 
-### 🔗 Update imports across the project
+- ✅ Renomeia `HeaderComponent`, `app-header`, `./header`, `.header`
+- 🚫 **Não** toca em `subHeader`, `headers`, `header-icon`, `header-utils` ou na palavra "header" em prosa
+- 🎯 Só edita arquivos que **de fato referenciam** o componente (importam o módulo ou usam o selector) — arquivos que só contêm a palavra são ignorados
 
-All `import`, `require()`, dynamic `import()`, and CSS `@import` statements referencing the old paths are updated automatically.
+Tudo é aplicado como uma operação atômica: **um Ctrl+Z desfaz tudo**.
 
-```typescript
-// Before
-import { HomeComponent } from './home/home.component';
+## ⚙️ Configurações
 
-// After
-import { DashboardComponent } from './dashboard/dashboard.component';
-```
-
-### 📝 Update file contents
-
-Class names, Angular selectors, CSS classes, and camelCase references inside the renamed files are updated too.
-
-| What | Before | After |
+| Configuração | Padrão | Descrição |
 |---|---|---|
-| **Angular selector** | `app-home` | `app-dashboard` |
-| **Component class** | `HomeComponent` | `DashboardComponent` |
-| **CSS class** | `.home-container` | `.dashboard-container` |
-| **camelCase ref** | `homeService` | `dashboardService` |
+| `smartRename.showPreview` | `true` | Mostrar a prévia antes de aplicar |
+| `smartRename.updateImports` | `true` | Atualizar imports e referências no projeto |
+| `smartRename.updateFileContents` | `true` | Atualizar classe, selector e referências internas |
+| `smartRename.autoRenameOnFolderChange` | `true` | Detectar renomeação manual de pasta e oferecer atualizar o resto |
+| `smartRename.excludeFolders` | `node_modules`, `dist`, … | Pastas ignoradas na busca de referências |
 
-### 👁️ Preview before applying
+## 📐 Convenção esperada (Angular)
 
-See exactly what will change before anything is modified. Review file renames, content changes, and import updates — then apply or cancel.
+Funciona melhor com a estrutura padrão de componente Angular, onde os arquivos compartilham o nome da pasta:
 
-### ⏪ Atomic undo
-
-All changes (file renames + content edits + import updates) are applied as a single `WorkspaceEdit`. One **Ctrl+Z** undoes everything.
-
-### 🖱️ Rename from file context
-
-Right-click any file and select **"Smart Rename: Rename This Component"** — it renames the parent folder and all sibling files that share the folder name.
-
----
-
-## 🌍 Supported Frameworks
-
-Smart Rename is **framework-agnostic**. It works with any project structure where files share the folder name:
-
-| Framework | Typical pattern |
-|---|---|
-| **Angular** | `name.component.ts`, `name.module.ts`, `name.service.ts`, `name.spec.ts` |
-| **React** | `Name.tsx`, `Name.test.tsx`, `Name.styles.ts`, `Name.stories.tsx` |
-| **Vue** | `Name.vue`, `Name.spec.ts` |
-| **Svelte** | `Name.svelte`, `Name.test.ts` |
-| **Next.js / Nuxt** | Works with any of the above |
-| **Plain TypeScript/JavaScript** | Any `name.*` pattern |
-| **CSS/SCSS/SASS/Less** | `name.module.css`, `name.styles.scss` |
-
----
-
-## 🧠 How It Works
-
-1. **Scan** — reads the folder contents and finds all files whose name starts with the old folder name
-2. **Compute** — builds the list of file renames, content replacements (PascalCase, camelCase, kebab-case), and import path updates
-3. **Preview** — shows all planned changes for your review (optional, configurable)
-4. **Apply** — executes everything as a single atomic `WorkspaceEdit`
-5. **Done** — one Ctrl+Z to undo if needed
-
----
-
-## ⚙️ Settings
-
-| Setting | Default | Description |
-|---|---|---|
-| `smartRename.autoRenameOnFolderChange` | `true` | Auto-detect folder renames and offer to rename files inside |
-| `smartRename.updateImports` | `true` | Update import paths and references across the project |
-| `smartRename.updateFileContents` | `true` | Update class names, selectors, and references inside files |
-| `smartRename.showPreview` | `true` | Show a preview of all changes before applying |
-| `smartRename.filePatterns` | *(see below)* | Glob patterns for files to consider when renaming |
-| `smartRename.excludeFolders` | `["node_modules", ".git", "dist", "build", ...]` | Folders to exclude when scanning for import references |
-
-<details>
-<summary><strong>Default file patterns</strong></summary>
-
-```json
-[
-  "*.component.ts", "*.component.html", "*.component.css", "*.component.scss",
-  "*.component.sass", "*.component.less", "*.component.spec.ts",
-  "*.module.ts", "*.service.ts", "*.service.spec.ts",
-  "*.directive.ts", "*.pipe.ts", "*.guard.ts", "*.resolver.ts", "*.interceptor.ts",
-  "*.stories.tsx", "*.stories.ts",
-  "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx",
-  "*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx",
-  "*.styles.ts", "*.styles.css", "*.styles.scss",
-  "*.module.css", "*.module.scss",
-  "*.tsx", "*.ts", "*.jsx", "*.js", "*.vue", "*.svelte", "*.html", "*.css", "*.scss", "*.sass", "*.less"
-]
 ```
-</details>
-
----
-
-## 🚀 Installation
-
-Search **Smart Rename** in the VS Code Extensions panel, or:
-
-```bash
-code --install-extension danilodevsilva.smart-rename
+header/
+├─ header.component.ts      → loja.component.ts
+├─ header.component.html    → loja.component.html
+├─ header.component.scss    → loja.component.scss
+└─ header.component.spec.ts → loja.component.spec.ts
 ```
 
----
+> Também funciona com a convenção mais nova do Angular (sem o sufixo `.component`): `header.ts`, `header.html`, `header.scss`, `header.spec.ts`.
 
-## 📖 Usage
+## ⚠️ Limitações conhecidas
 
-### Option 1: Right-click a folder
+- Dentro de um arquivo que **já referencia** o componente, um token `header` solto também é renomeado — fica visível na prévia para você desmarcar.
+- Variantes BEM de CSS como `.header-title` não são renomeadas (decisão de segurança para não confundir com componentes irmãos como `app-header-icon`). A classe exata `.header` é renomeada normalmente.
 
-1. Right-click any folder in the Explorer sidebar
-2. Select **"Smart Rename: Rename Folder & Files"**
-3. Type the new name
-4. Review the preview and confirm
+## 📝 Licença
 
-### Option 2: Right-click a file
-
-1. Right-click any file in the Explorer sidebar
-2. Select **"Smart Rename: Rename This Component"**
-3. Type the new name
-4. The parent folder and all sibling files are renamed
-
-### Option 3: Just rename the folder normally
-
-1. Select a folder and press **F2** (or right-click → Rename)
-2. Type the new name
-3. Smart Rename detects the change and asks if you want to rename the files inside
-
-### Option 4: Command Palette
-
-1. Open the Command Palette (**Ctrl+Shift+P** / **Cmd+Shift+P**)
-2. Search for **"Smart Rename"**
-3. Choose one of the available commands
+MIT © Danilo Agostinho
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
-
----
-
-## 💬 Feedback & Issues
-
-Found a bug or have a feature request? [Open an issue on GitHub](https://github.com/daniloagostinho/smart-rename/issues).
-
-If this extension saves you time, consider leaving a review on the Marketplace — it really helps!
-
----
-
-## 📄 License
-
-[MIT](LICENSE)
+<sub>Ícone original inspirado no estilo visual do Angular. Não afiliado ao Google nem ao time do Angular. "Angular" é marca de seus respectivos donos.</sub>

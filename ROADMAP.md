@@ -1,14 +1,19 @@
-# Smart Rename — Roadmap de Implementação
+# Angular Rename Files — Roadmap de Implementação
 
 > Documento vivo. Serve como histórico de decisões e plano de execução.
-> Última atualização: 2026-06-19
+> Última atualização: 2026-06-20
+>
+> **Rebrand (2026-06-20):** a extensão passou a ser oficialmente **Angular Rename
+> Files** — focada em componentes Angular. O id do Marketplace continua
+> `danilodevsilva.power-rename` (rebrand na listagem existente).
 
 ## Visão
 
-Renomear a **unidade lógica** (um componente, não 5 arquivos soltos) com um único
-comando, atualizando arquivos, pasta, classe, selector e imports — de forma
-**atômica, reversível e previsível**. Angular como cidadão de primeira classe;
-demais frameworks como best-effort via tsserver.
+Renomear a **unidade lógica** (um componente Angular, não 5 arquivos soltos) com um
+único comando, atualizando arquivos, pasta, classe, selector e imports — de forma
+**atômica, reversível e previsível**. **Angular é a identidade oficial**; o motor
+em si é genérico, mas a calibragem (selector, `NomeComponent`, `templateUrl`) é
+Angular-first.
 
 **Princípio norteador:** não competir com o language service (onde regex sempre
 perde), e sim **orquestrá-lo** — deixar o tsserver/Angular fazer o trabalho pesado

@@ -11,7 +11,7 @@ import {
 import { showPreview, showQuickConfirm } from './preview.js';
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Smart Rename extension activated');
+  console.log('Angular Rename Files extension activated');
 
   // Command: Right-click a folder → "Smart Rename: Rename Folder & Files"
   const renameFolderCommand = vscode.commands.registerCommand(
@@ -169,80 +169,81 @@ async function performSmartRename(
   const shouldUpdateContents = config.get<boolean>('updateFileContents', true);
   const shouldShowPreview = config.get<boolean>('showPreview', true) && !skipPreview;
 
-  await vscode.window.withProgress(
+  const tokens = buildRenameTokens(oldName, newName);
+
+  // --- Phase A: compute changes (progress notification, no user interaction) ---
+  // Kept separate from the preview so the progress notification is NOT showing
+  // behind the preview dropdown (that looked redundant).
+  const computed = await vscode.window.withProgress(
     {
-      location: vscode.ProgressLocation.Notification,
-      title: `Renomeando  ${oldName} → ${newName}`,
-      cancellable: true,
+      // Status-bar progress (a subtle spinner), not a notification card.
+      location: vscode.ProgressLocation.Window,
+      title: 'Smart Rename',
     },
-    async (progress, token) => {
-      const tokens = buildRenameTokens(oldName, newName);
-
-      // Step 1: file renames (boundary-aware: only files that are the unit).
-      progress.report({ message: 'Procurando arquivos…', increment: 10 });
+    async (progress) => {
+      progress.report({ message: 'procurando arquivos…' });
       const fileRenames = await computeFileRenames(folderUri, oldName, newName);
-      if (token.isCancellationRequested) {
-        return;
-      }
 
-      // Step 2: content changes inside the component's own folder.
-      progress.report({ message: 'Analisando conteúdo…', increment: 20 });
+      progress.report({ message: 'analisando conteúdo…' });
       const internalChanges = shouldUpdateContents
         ? await computeInternalChanges(folderUri, tokens)
         : [];
-      if (token.isCancellationRequested) {
-        return;
-      }
 
-      // Step 3: references in OTHER files across the workspace.
-      progress.report({ message: 'Procurando referências…', increment: 30 });
+      progress.report({ message: 'procurando referências…' });
       const referenceChanges = shouldUpdateReferences
         ? await computeReferenceChanges(folderUri, oldName, tokens)
         : [];
-      if (token.isCancellationRequested) {
-        return;
-      }
 
-      const totalChanges = fileRenames.length + internalChanges.length + referenceChanges.length;
-      if (totalChanges === 0) {
-        vscode.window.showInformationMessage('Nenhum arquivo correspondente encontrado.');
-        return;
-      }
+      return { fileRenames, internalChanges, referenceChanges };
+    }
+  );
 
-      // Step 4: preview or quick confirm. The user can uncheck individual items.
-      let toApply = { fileRenames, internalChanges, referenceChanges };
-      if (shouldShowPreview) {
-        const selection = await showPreview(fileRenames, internalChanges, referenceChanges, oldName, newName);
-        if (!selection) {
-          return;
-        }
-        toApply = selection;
-      } else if (!skipPreview) {
-        const confirmed = await showQuickConfirm(fileRenames, internalChanges, referenceChanges, oldName, newName);
-        if (!confirmed) {
-          return;
-        }
-      }
+  if (!computed) {
+    return;
+  }
 
-      if (
-        toApply.fileRenames.length === 0 &&
-        toApply.internalChanges.length === 0 &&
-        toApply.referenceChanges.length === 0
-      ) {
-        return;
-      }
+  const { fileRenames, internalChanges, referenceChanges } = computed;
+  if (fileRenames.length + internalChanges.length + referenceChanges.length === 0) {
+    vscode.window.showInformationMessage('Nenhum arquivo correspondente encontrado.');
+    return;
+  }
 
-      // Step 5: Apply — RENAME FIRST, then edit text.
-      //
-      // Hard rule learned the hard way: you cannot edit a file's text AND rename
-      // that same file in the same WorkspaceEdit. The text edit marks the file
-      // dirty and the rename then fails, making applyEdit return false while the
-      // text edit already stuck. So we strictly order the phases:
-      //   Phase 1: rename child files (inside the still-old folder).
-      //   Phase 2: rename the folder itself.
-      //   Phase 3: text edits — internal content (remapped to the NEW paths)
-      //            + references in other files (paths unchanged, computed above).
-      progress.report({ message: 'Aplicando…', increment: 30 });
+  // --- Phase B: preview / confirm (NO progress notification on screen) ---
+  let toApply = { fileRenames, internalChanges, referenceChanges };
+  if (shouldShowPreview) {
+    const selection = await showPreview(fileRenames, internalChanges, referenceChanges, oldName, newName);
+    if (!selection) {
+      return;
+    }
+    toApply = selection;
+  } else if (!skipPreview) {
+    const confirmed = await showQuickConfirm(fileRenames, internalChanges, referenceChanges, oldName, newName);
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  if (
+    toApply.fileRenames.length === 0 &&
+    toApply.internalChanges.length === 0 &&
+    toApply.referenceChanges.length === 0
+  ) {
+    return;
+  }
+
+  // --- Phase C: apply (subtle status-bar progress, no notification card) ---
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      title: 'Smart Rename',
+    },
+    async (progress) => {
+      progress.report({ message: 'aplicando…' });
+
+      // Apply order matters. You cannot edit a file's text AND rename that same
+      // file in one WorkspaceEdit (the text edit marks it dirty and the rename
+      // then fails). So: Phase 1 rename files, Phase 2 rename folder, Phase 3
+      // text edits — internal content remapped to the new paths + references.
 
       // Guard: abort if the folder rename target already exists.
       let newFolderUri: vscode.Uri | undefined;
@@ -260,7 +261,7 @@ async function performSmartRename(
         }
       }
 
-      // --- Phase 1: rename selected child files (no text edits) ---
+      // Phase 1: rename selected child files (no text edits).
       if (toApply.fileRenames.length > 0) {
         const renameEdit = new vscode.WorkspaceEdit();
         addFileRenames(toApply.fileRenames, renameEdit);
@@ -273,7 +274,7 @@ async function performSmartRename(
         }
       }
 
-      // --- Phase 2: rename the folder itself (no text edits) ---
+      // Phase 2: rename the folder itself (no text edits).
       let contentFolderUri = folderUri;
       if (renameFolder && newFolderUri) {
         const folderEdit = new vscode.WorkspaceEdit();
@@ -289,9 +290,7 @@ async function performSmartRename(
         contentFolderUri = newFolderUri;
       }
 
-      // --- Phase 3: text edits, targeting the now-renamed files ---
-      // Map each internal change's original path to its final path: the folder may
-      // have moved (Phase 2) and its own file may have been renamed (Phase 1).
+      // Phase 3: text edits, targeting the now-renamed files.
       const renamedBase = new Map<string, string>();
       for (const r of toApply.fileRenames) {
         renamedBase.set(path.basename(r.oldUri.fsPath), path.basename(r.newUri.fsPath));
@@ -319,10 +318,9 @@ async function performSmartRename(
         toApply.referenceChanges.length +
         (renameFolder ? 1 : 0);
 
-      progress.report({ message: 'Pronto!', increment: 10 });
-
-      vscode.window.showInformationMessage(
-        `Renomeado: ${oldName} → ${newName} (${appliedCount} mudança${appliedCount === 1 ? '' : 's'}).`
+      vscode.window.setStatusBarMessage(
+        `$(check) Renomeado: ${oldName} → ${newName} (${appliedCount} mudança${appliedCount === 1 ? '' : 's'})`,
+        4000
       );
     }
   );

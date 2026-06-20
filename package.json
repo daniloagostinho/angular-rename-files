@@ -1,10 +1,10 @@
 {
   "name": "power-rename",
-  "displayName": "Smart Rename",
+  "displayName": "Angular Rename Files",
   "publisher": "danilodevsilva",
-  "description": "Rename a folder and automatically rename all matching files inside. Updates imports and references across the entire project. Works with Angular, React, Vue, Svelte, and any framework.",
+  "description": "Renomeie um componente Angular de uma vez: renomeia a pasta e os arquivos (.ts, .html, .scss, .spec), a classe, o selector e atualiza os imports em todo o projeto. Rename an Angular component in one step — folder, files, class, selector and imports.",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -13,24 +13,23 @@
     "Formatters"
   ],
   "keywords": [
+    "angular",
+    "ng",
+    "angular rename",
+    "rename component",
+    "angular component",
     "rename",
     "refactor",
+    "refactoring",
     "folder rename",
-    "bulk rename",
-    "smart rename",
-    "angular",
-    "react",
-    "vue",
-    "svelte",
-    "component rename",
-    "file rename",
-    "import update",
     "rename files",
     "rename folder",
-    "rename component",
+    "component rename",
+    "selector",
+    "standalone component",
+    "import update",
     "productivity",
-    "developer tools",
-    "refactoring"
+    "developer tools"
   ],
   "icon": "icon.png",
   "main": "./out/extension.js",
@@ -41,11 +40,11 @@
     "commands": [
       {
         "command": "smartRename.renameFolder",
-        "title": "Smart Rename: Renomear pasta e arquivos"
+        "title": "Angular Rename: Renomear pasta e arquivos"
       },
       {
         "command": "smartRename.renameFromFile",
-        "title": "Smart Rename: Renomear este componente"
+        "title": "Angular Rename: Renomear este componente"
       }
     ],
     "menus": {
@@ -63,7 +62,7 @@
       ]
     },
     "configuration": {
-      "title": "Smart Rename",
+      "title": "Angular Rename Files",
       "properties": {
         "smartRename.autoRenameOnFolderChange": {
           "type": "boolean",
