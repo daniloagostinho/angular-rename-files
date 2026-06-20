@@ -4,7 +4,7 @@
   "publisher": "danilodevsilva",
   "description": "Rename a folder and automatically rename all matching files inside. Updates imports and references across the entire project. Works with Angular, React, Vue, Svelte, and any framework.",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -41,11 +41,11 @@
     "commands": [
       {
         "command": "smartRename.renameFolder",
-        "title": "Smart Rename: Rename Folder & Files"
+        "title": "Smart Rename: Renomear pasta e arquivos"
       },
       {
         "command": "smartRename.renameFromFile",
-        "title": "Smart Rename: Rename This Component"
+        "title": "Smart Rename: Renomear este componente"
       }
     ],
     "menus": {
@@ -68,22 +68,22 @@
         "smartRename.autoRenameOnFolderChange": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically detect folder renames and offer to rename files inside."
+          "description": "Detectar automaticamente quando uma pasta é renomeada e oferecer renomear os arquivos de dentro."
         },
         "smartRename.updateImports": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically update import paths and references across the project."
+          "description": "Atualizar automaticamente os caminhos de import e referências em todo o projeto."
         },
         "smartRename.updateFileContents": {
           "type": "boolean",
           "default": true,
-          "description": "Update class names, selectors, and other references inside files."
+          "description": "Atualizar nomes de classe, selectors e outras referências dentro dos arquivos."
         },
         "smartRename.showPreview": {
           "type": "boolean",
           "default": true,
-          "description": "Show a preview of all changes before applying."
+          "description": "Mostrar uma prévia das mudanças antes de aplicar."
         },
         "smartRename.filePatterns": {
           "type": "array",
@@ -130,7 +130,7 @@
             "*.sass",
             "*.less"
           ],
-          "description": "File patterns to consider when renaming (glob patterns). Files matching these patterns whose name starts with the folder name will be renamed."
+          "description": "Padrões de arquivo considerados ao renomear (glob). Arquivos que correspondem a esses padrões e cujo nome começa com o nome da pasta serão renomeados."
         },
         "smartRename.excludeFolders": {
           "type": "array",
@@ -144,7 +144,7 @@
             ".nuxt",
             ".angular"
           ],
-          "description": "Folders to exclude when searching for import references."
+          "description": "Pastas a ignorar ao procurar referências de import."
         }
       }
     }

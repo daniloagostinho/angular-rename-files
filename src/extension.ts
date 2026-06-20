@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          openLabel: 'Select Folder to Rename',
+          openLabel: 'Selecionar pasta para renomear',
         });
         if (!folderUris || folderUris.length === 0) {
           return;
@@ -34,17 +34,17 @@ export function activate(context: vscode.ExtensionContext) {
       const oldName = path.basename(uri.fsPath);
 
       const newName = await vscode.window.showInputBox({
-        prompt: `Rename "${oldName}" to:`,
+        prompt: `Renomear "${oldName}" para:`,
         value: oldName,
         validateInput: (value) => {
           if (!value || value.trim().length === 0) {
-            return 'Name cannot be empty';
+            return 'O nome não pode ficar vazio';
           }
           if (value === oldName) {
-            return 'New name must be different from old name';
+            return 'O novo nome precisa ser diferente do atual';
           }
           if (/[<>:"/\\|?*]/.test(value)) {
-            return 'Name contains invalid characters';
+            return 'O nome contém caracteres inválidos';
           }
           return undefined;
         },
@@ -73,24 +73,24 @@ export function activate(context: vscode.ExtensionContext) {
       // Check if the file name starts with the folder name
       if (!fileName.startsWith(folderName)) {
         vscode.window.showWarningMessage(
-          `Smart Rename: File "${fileName}" doesn't match folder name "${folderName}". ` +
-          `This command works best when the file name starts with the folder name.`
+          `O arquivo "${fileName}" não corresponde à pasta "${folderName}". ` +
+          `Este comando funciona melhor quando o nome do arquivo começa com o nome da pasta.`
         );
         return;
       }
 
       const newName = await vscode.window.showInputBox({
-        prompt: `Rename component "${folderName}" to:`,
+        prompt: `Renomear o componente "${folderName}" para:`,
         value: folderName,
         validateInput: (value) => {
           if (!value || value.trim().length === 0) {
-            return 'Name cannot be empty';
+            return 'O nome não pode ficar vazio';
           }
           if (value === folderName) {
-            return 'New name must be different from old name';
+            return 'O novo nome precisa ser diferente do atual';
           }
           if (/[<>:"/\\|?*]/.test(value)) {
-            return 'Name contains invalid characters';
+            return 'O nome contém caracteres inválidos';
           }
           return undefined;
         },
@@ -140,15 +140,15 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Offer to rename
       const result = await vscode.window.showInformationMessage(
-        `Smart Rename: Found ${renames.length} file(s) matching "${oldName}" in the renamed folder. Rename them to "${newName}"?`,
-        'Yes, rename all',
-        'Preview changes',
-        'No'
+        `Atualizar ${renames.length} arquivo(s) e referências de "${oldName}" para "${newName}"?`,
+        'Renomear',
+        'Ver detalhes',
+        'Agora não'
       );
 
-      if (result === 'Yes, rename all') {
+      if (result === 'Renomear') {
         await performSmartRename(newUri, oldName, newName, false, true);
-      } else if (result === 'Preview changes') {
+      } else if (result === 'Ver detalhes') {
         await performSmartRename(newUri, oldName, newName);
       }
     }
@@ -172,21 +172,21 @@ async function performSmartRename(
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `Smart Rename: ${oldName} → ${newName}`,
+      title: `Renomeando  ${oldName} → ${newName}`,
       cancellable: true,
     },
     async (progress, token) => {
       const tokens = buildRenameTokens(oldName, newName);
 
       // Step 1: file renames (boundary-aware: only files that are the unit).
-      progress.report({ message: 'Scanning files...', increment: 10 });
+      progress.report({ message: 'Procurando arquivos…', increment: 10 });
       const fileRenames = await computeFileRenames(folderUri, oldName, newName);
       if (token.isCancellationRequested) {
         return;
       }
 
       // Step 2: content changes inside the component's own folder.
-      progress.report({ message: 'Analyzing content...', increment: 20 });
+      progress.report({ message: 'Analisando conteúdo…', increment: 20 });
       const internalChanges = shouldUpdateContents
         ? await computeInternalChanges(folderUri, tokens)
         : [];
@@ -195,7 +195,7 @@ async function performSmartRename(
       }
 
       // Step 3: references in OTHER files across the workspace.
-      progress.report({ message: 'Scanning references...', increment: 30 });
+      progress.report({ message: 'Procurando referências…', increment: 30 });
       const referenceChanges = shouldUpdateReferences
         ? await computeReferenceChanges(folderUri, oldName, tokens)
         : [];
@@ -205,7 +205,7 @@ async function performSmartRename(
 
       const totalChanges = fileRenames.length + internalChanges.length + referenceChanges.length;
       if (totalChanges === 0) {
-        vscode.window.showInformationMessage('Smart Rename: No matching files found.');
+        vscode.window.showInformationMessage('Nenhum arquivo correspondente encontrado.');
         return;
       }
 
@@ -242,7 +242,7 @@ async function performSmartRename(
       //   Phase 2: rename the folder itself.
       //   Phase 3: text edits — internal content (remapped to the NEW paths)
       //            + references in other files (paths unchanged, computed above).
-      progress.report({ message: 'Applying changes...', increment: 30 });
+      progress.report({ message: 'Aplicando…', increment: 30 });
 
       // Guard: abort if the folder rename target already exists.
       let newFolderUri: vscode.Uri | undefined;
@@ -252,7 +252,7 @@ async function performSmartRename(
         try {
           await vscode.workspace.fs.stat(newFolderUri);
           vscode.window.showErrorMessage(
-            `Smart Rename: A folder named "${newName}" already exists here. Rename aborted.`
+            `Já existe uma pasta chamada "${newName}" aqui. Renomeação cancelada.`
           );
           return;
         } catch {
@@ -267,7 +267,7 @@ async function performSmartRename(
         const ok = await vscode.workspace.applyEdit(renameEdit);
         if (!ok) {
           vscode.window.showErrorMessage(
-            `Smart Rename: Failed to rename files for "${oldName} → ${newName}". Nothing was changed.`
+            `Não foi possível renomear os arquivos (${oldName} → ${newName}). Nada foi alterado.`
           );
           return;
         }
@@ -281,8 +281,8 @@ async function performSmartRename(
         const ok = await vscode.workspace.applyEdit(folderEdit);
         if (!ok) {
           vscode.window.showWarningMessage(
-            `Smart Rename: Files were renamed, but renaming the folder ` +
-            `"${oldName}" → "${newName}" failed. Rename the folder manually.`
+            `Os arquivos foram renomeados, mas não foi possível renomear a pasta ` +
+            `"${oldName}" → "${newName}". Renomeie a pasta manualmente.`
           );
           return;
         }
@@ -308,8 +308,8 @@ async function performSmartRename(
       const textOk = await vscode.workspace.applyEdit(textEdit);
       if (!textOk) {
         vscode.window.showWarningMessage(
-          `Smart Rename: Files were renamed, but updating contents/references failed. ` +
-          `Check the references manually.`
+          `Os arquivos foram renomeados, mas não foi possível atualizar o conteúdo/referências. ` +
+          `Confira as referências manualmente.`
         );
       }
 
@@ -319,10 +319,10 @@ async function performSmartRename(
         toApply.referenceChanges.length +
         (renameFolder ? 1 : 0);
 
-      progress.report({ message: 'Done!', increment: 10 });
+      progress.report({ message: 'Pronto!', increment: 10 });
 
       vscode.window.showInformationMessage(
-        `Smart Rename: Successfully applied ${appliedCount} change(s). (${oldName} → ${newName})`
+        `Renomeado: ${oldName} → ${newName} (${appliedCount} mudança${appliedCount === 1 ? '' : 's'}).`
       );
     }
   );
