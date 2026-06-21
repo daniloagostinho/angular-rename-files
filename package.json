@@ -165,13 +165,13 @@
     "url": "https://github.com/daniloagostinho"
   },
   "license": "MIT",
-  "homepage": "https://github.com/daniloagostinho/smart-rename#readme",
+  "homepage": "https://github.com/daniloagostinho/angular-rename-files#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/daniloagostinho/smart-rename.git"
+    "url": "https://github.com/daniloagostinho/angular-rename-files.git"
   },
   "bugs": {
-    "url": "https://github.com/daniloagostinho/smart-rename/issues"
+    "url": "https://github.com/daniloagostinho/angular-rename-files/issues"
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
