@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.0.7] — 2026-06-21
+
+### Documentação
+- GIF de demonstração adicionado ao topo do README, mostrando a renomeação de um componente Angular e seus arquivos relacionados em um único comando.
+
+## [0.0.6] — 2026-06-20
+
+### Marketplace e descoberta
+- Novo nome de exibição: **Angular Component Rename & Refactor**, com posicionamento mais claro para buscas por Angular.
+- Descrição internacional e palavras-chave focadas em renomeação e refatoração de componentes Angular.
+- Página do Marketplace reformulada em inglês e português, com proposta de valor, instalação e compatibilidade mais fáceis de encontrar.
+- Categoria corrigida e novo banner visual para melhorar a apresentação no Marketplace.
+
 ## [0.0.4] — 2026-06-20
 
 ### Mudança de marca

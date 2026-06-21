@@ -1,37 +1,49 @@
 {
   "name": "power-rename",
-  "displayName": "Angular Rename Files",
+  "displayName": "Angular Component Rename & Refactor",
   "publisher": "danilodevsilva",
-  "description": "Renomeie um componente Angular de uma vez: renomeia a pasta e os arquivos (.ts, .html, .scss, .spec), a classe, o selector e atualiza os imports em todo o projeto. Rename an Angular component in one step — folder, files, class, selector and imports.",
+  "description": "Rename and refactor Angular components in one step: folder, files, class, selector, templates, and imports. Supports standalone components and modern Angular.",
   "type": "module",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
-    "Other",
-    "Formatters"
+    "Other"
   ],
   "keywords": [
     "angular",
-    "ng",
-    "angular rename",
-    "rename component",
     "angular component",
-    "rename",
-    "refactor",
-    "refactoring",
-    "folder rename",
+    "angular rename",
+    "rename angular component",
+    "angular refactor",
+    "angular refactoring",
+    "angular renamer",
+    "angular files",
+    "angular folder",
+    "angular selector",
+    "angular imports",
+    "angular standalone",
+    "standalone component",
+    "angular 20",
+    "angular cli",
+    "typescript",
+    "typescript refactor",
+    "rename component",
+    "component rename",
     "rename files",
     "rename folder",
-    "component rename",
-    "selector",
-    "standalone component",
-    "import update",
-    "productivity",
-    "developer tools"
+    "update imports",
+    "refactoring",
+    "vscode angular",
+    "developer productivity"
   ],
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#C3002F",
+    "theme": "dark"
+  },
+  "pricing": "Free",
   "main": "./out/extension.js",
   "activationEvents": [
     "onStartupFinished"
